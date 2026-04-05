@@ -1,0 +1,11 @@
+.venv
+seed.py
+farmers.csv
+dealers.csv
+.env
+__pycache__/
+*.pyc
+*.pyo
+.env
+agriconnect.db
+*.sqlite3
