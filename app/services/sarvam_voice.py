@@ -27,7 +27,7 @@ def speech_to_text(audio_bytes: bytes, state: str) -> str:
         json={
             "audio": audio_b64,
             "language_code": language,
-            "model": "saarika:v2",
+            "model": "Saaras v3",
         },
         timeout=15,
     )
@@ -46,7 +46,7 @@ def text_to_speech(text: str, state: str) -> bytes:
         json={
             "text": text,
             "language_code": language,
-            "model": "bulbul:v1",
+            "model": "bulbul:v3",
             "enable_preprocessing": True,
         },
         timeout=15,
@@ -54,3 +54,114 @@ def text_to_speech(text: str, state: str) -> bytes:
     response.raise_for_status()
     audio_b64 = response.json().get("audios", [""])[0]
     return base64.b64decode(audio_b64)
+
+def analyse_price_fairness(
+    crop: str,
+    offered_price: float,
+    modal_price: float,
+    min_price: float,
+    max_price: float,
+    language: str,
+) -> str:
+    """
+    Ask Sarvam LLM if the dealer's offered price is fair.
+    Returns plain text analysis in the farmer's language.
+    """
+    api_key = current_app.config.get("SARVAM_API_KEY")
+
+    diff_pct = ((offered_price - modal_price) / modal_price) * 100
+    verdict = "good" if diff_pct >= -5 else "bad"
+
+    prompt = f"""
+You are an agricultural price advisor helping an Indian farmer.
+Today's mandi data for {crop}:
+- Modal price: ₹{modal_price}/quintal
+- Min price: ₹{min_price}/quintal  
+- Max price: ₹{max_price}/quintal
+
+A dealer has offered the farmer ₹{offered_price}/quintal.
+The offer is {abs(diff_pct):.1f}% {'above' if diff_pct >= 0 else 'below'} today's modal mandi price.
+
+Give a SHORT 2-3 sentence analysis:
+1. Whether this is a {verdict} deal and why
+2. What the farmer should do (accept / negotiate / reject)
+
+Respond ONLY in the language code: {language}
+Be simple, direct, and speak as if talking to a rural farmer.
+Do not use technical jargon.
+"""
+
+    response = requests.post(
+        "https://api.sarvam.ai/v1/chat/completions",
+        headers={
+            "api-subscription-key": api_key,
+            "Content-Type": "application/json",
+        },
+        json={
+            "model": "sarvam-m",
+            "messages": [{"role": "user", "content": prompt}],
+            "max_tokens": 200,
+        },
+        timeout=20,
+    )
+    response.raise_for_status()
+    return response.json()["choices"][0]["message"]["content"].strip()
+
+
+def rank_dealers(
+    crop: str,
+    farmer_city: str,
+    dealers: list,
+    modal_price: float,
+    language: str,
+) -> str:
+    """
+    Ask Sarvam LLM to rank dealers and explain why.
+    dealers: list of dicts with keys: name, price_per_quintal, city, rating, payment_terms
+    Returns plain text ranking in farmer's language.
+    """
+    api_key = current_app.config.get("SARVAM_API_KEY")
+
+    dealer_lines = "\n".join([
+        f"{i+1}. {d['name']} — ₹{d['price_per_quintal']}/q, "
+        f"located in {d['city']}, rating {d['rating']}/5, "
+        f"payment: {d['payment_terms']}"
+        for i, d in enumerate(dealers[:10])  # max 10 dealers to LLM
+    ])
+
+    prompt = f"""
+You are an agricultural marketplace assistant helping an Indian farmer in {farmer_city}.
+The farmer wants to sell {crop}. Today's modal mandi price is ₹{modal_price}/quintal.
+
+Here are available dealers:
+{dealer_lines}
+
+Rank the TOP 3 dealers for this farmer and explain briefly why each is a good choice.
+Consider: price offered vs mandi rate, proximity to farmer, dealer rating, payment terms.
+
+Format your response as:
+1. [Dealer name] — [1 sentence reason]
+2. [Dealer name] — [1 sentence reason]  
+3. [Dealer name] — [1 sentence reason]
+
+Then add one line of overall advice.
+
+Respond ONLY in language code: {language}
+Keep it simple for a rural farmer. No jargon.
+"""
+
+    response = requests.post(
+        "https://api.sarvam.ai/v1/chat/completions",
+        headers={
+            "api-subscription-key": api_key,
+            "Content-Type": "application/json",
+        },
+        json={
+            "model": "sarvam-m",
+            "messages": [{"role": "user", "content": prompt}],
+            "max_tokens": 300,
+        },
+        timeout=20,
+    )
+    response.raise_for_status()
+    return response.json()["choices"][0]["message"]["content"].strip()

@@ -7,6 +7,14 @@ from flask import send_file
 import io
 from app.services.sarvam_voice import speech_to_text, text_to_speech
 from app.services.market_prices import get_prices_for_commodity
+from app.services.sarvam_voice import (
+    speech_to_text,
+    text_to_speech,
+    get_language,
+    analyse_price_fairness,
+    rank_dealers,
+)
+from app.models import DealerProfile, User
 
 farmer_bp = Blueprint("farmer", __name__, url_prefix="/farmer")
 
@@ -108,3 +116,129 @@ def voice_prices():
         )
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    
+
+@farmer_bp.route("/analyse/price", methods=["POST"])
+@login_required
+def analyse_price():
+    """
+    Farmer taps Analyse button.
+    Compares dealer's offered price vs mandi modal price.
+    Returns text analysis + audio.
+    """
+    profile = FarmerProfile.query.filter_by(farmer_id=current_user.id).first_or_404()
+    data = request.json
+
+    offered_price = float(data.get("offered_price", 0))
+    crop = data.get("crop") or profile.crop_type
+
+    if not crop or not offered_price:
+        return jsonify({"error": "Crop and offered price are required"}), 400
+
+    # Get mandi prices
+    prices = get_prices_for_commodity(crop)
+    if not prices:
+        return jsonify({"error": f"No mandi data found for {crop}"}), 404
+
+    top = prices[0]
+    language = get_language(profile.state)
+
+    # Get LLM analysis text
+    try:
+        analysis_text = analyse_price_fairness(
+            crop=crop,
+            offered_price=offered_price,
+            modal_price=top.modal_price,
+            min_price=top.min_price,
+            max_price=top.max_price,
+            language=language,
+        )
+    except Exception as e:
+        return jsonify({"error": f"Sarvam LLM failed: {str(e)}"}), 500
+
+    # Convert analysis to audio
+    try:
+        audio_bytes = text_to_speech(analysis_text, profile.state)
+        audio_b64 = __import__("base64").b64encode(audio_bytes).decode("utf-8")
+    except Exception as e:
+        audio_b64 = None  # text still works even if TTS fails
+
+    return jsonify({
+        "analysis": analysis_text,
+        "audio_b64": audio_b64,          # frontend plays this
+        "mandi_modal": top.modal_price,
+        "mandi_min": top.min_price,
+        "mandi_max": top.max_price,
+        "market": top.market,
+        "district": top.district,
+    })
+
+
+@farmer_bp.route("/analyse/dealers", methods=["POST"])
+@login_required
+def analyse_dealers():
+    """
+    Farmer taps Analyse button on dealer list.
+    Sarvam LLM ranks top 3 dealers and explains why.
+    Returns text ranking + audio.
+    """
+    profile = FarmerProfile.query.filter_by(farmer_id=current_user.id).first_or_404()
+    crop = profile.crop_type
+
+    if not crop:
+        return jsonify({"error": "Update your crop type in profile first"}), 400
+
+    # Fetch matching dealers from DB
+    dealer_profiles = (
+        DealerProfile.query
+        .filter(DealerProfile.crop_type.ilike(f"%{crop}%"))
+        .limit(10)
+        .all()
+    )
+
+    if not dealer_profiles:
+        return jsonify({"error": f"No dealers found for {crop}"}), 404
+
+    # Build dealer list for LLM
+    dealers = []
+    for dp in dealer_profiles:
+        user = User.query.get(dp.dealer_id)
+        dealers.append({
+            "name": user.name if user else "Unknown",
+            "price_per_quintal": dp.price_per_quintal,
+            "city": dp.address,
+            "rating": dp.rating,
+            "payment_terms": dp.payment_terms,
+        })
+
+    # Get mandi modal price
+    prices = get_prices_for_commodity(crop)
+    modal_price = prices[0].modal_price if prices else 0
+
+    language = get_language(profile.state)
+
+    # Get LLM ranking
+    try:
+        ranking_text = rank_dealers(
+            crop=crop,
+            farmer_city=profile.city,
+            dealers=dealers,
+            modal_price=modal_price,
+            language=language,
+        )
+    except Exception as e:
+        return jsonify({"error": f"Sarvam LLM failed: {str(e)}"}), 500
+
+    # Convert to audio
+    try:
+        audio_bytes = text_to_speech(ranking_text, profile.state)
+        audio_b64 = __import__("base64").b64encode(audio_bytes).decode("utf-8")
+    except Exception as e:
+        audio_b64 = None
+
+    return jsonify({
+        "ranking": ranking_text,
+        "audio_b64": audio_b64,
+        "dealers_analysed": len(dealers),
+        "modal_price": modal_price,
+    })
