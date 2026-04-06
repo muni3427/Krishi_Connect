@@ -1,68 +1,56 @@
-import requests
 import base64
+import os
+import io
 from flask import current_app
+import google.generativeai as genai
+from gtts import gTTS
 
 STATE_TO_LANGUAGE = {
-    "Karnataka": "kn-IN",
-    "Tamil Nadu": "ta-IN",
-    "Andhra Pradesh": "te-IN",
-    "Telangana": "te-IN",
-    "Kerala": "ml-IN",
+    "Karnataka": "kn",
+    "Tamil Nadu": "ta",
+    "Andhra Pradesh": "te",
+    "Telangana": "te",
+    "Kerala": "ml",
 }
 
 def get_language(state_or_lang: str) -> str:
-    valid_langs = ["hi-IN", "kn-IN", "ta-IN", "te-IN", "ml-IN", "mr-IN", "bn-IN", "gu-IN", "or-IN", "pa-IN", "en-IN"]
+    valid_langs = ["hi", "kn", "ta", "te", "ml", "mr", "bn", "gu", "or", "pa", "en"]
     if state_or_lang in valid_langs:
         return state_or_lang
-    
-    # Handle two-letter selections from profile
-    short_map = {"hi": "hi-IN", "kn": "kn-IN", "ta": "ta-IN", "te": "te-IN", "ml": "ml-IN", "en": "en-IN"}
-    if state_or_lang in short_map:
-        return short_map[state_or_lang]
+    if state_or_lang and '-' in state_or_lang:
+        short = state_or_lang.split('-')[0]
+        if short in valid_langs:
+            return short
+    return STATE_TO_LANGUAGE.get(state_or_lang, "hi")
 
-    return STATE_TO_LANGUAGE.get(state_or_lang, "hi-IN")  # fallback to state mapping
-
+def _get_model():
+    api_key = current_app.config.get("GEMINI_API_KEY")
+    if not api_key:
+        api_key = os.environ.get("GEMINI_API_KEY", "")
+    genai.configure(api_key=api_key)
+    return genai.GenerativeModel("gemini-3.0-flash")
 
 def speech_to_text(audio_bytes: bytes, state: str) -> str:
-    """Send farmer's voice to Sarvam STT, get back crop name as text."""
-    api_key = current_app.config.get("SARVAM_API_KEY")
-    language = get_language(state)
-
-    audio_b64 = base64.b64encode(audio_bytes).decode("utf-8")
-
-    response = requests.post(
-        "https://api.sarvam.ai/speech-to-text",
-        headers={"api-subscription-key": api_key},
-        json={
-            "audio": audio_b64,
-            "language_code": language,
-            "model": "Saaras v3",
-        },
-        timeout=15,
-    )
-    response.raise_for_status()
-    return response.json().get("transcript", "").strip()
-
+    """Send farmer's voice to Gemini STT, get back crop name as text."""
+    model = _get_model()
+    prompt = "Transcribe this audio. Output ONLY the transcribed text in the language it is spoken in. Do not include any extra words."
+    response = model.generate_content([
+        {"mime_type": "audio/wav", "data": audio_bytes},
+        prompt
+    ])
+    return response.text.strip() if response.text else ""
 
 def text_to_speech(text: str, state: str) -> bytes:
     """Convert price text to audio, return raw audio bytes."""
-    api_key = current_app.config.get("SARVAM_API_KEY")
     language = get_language(state)
-
-    response = requests.post(
-        "https://api.sarvam.ai/text-to-speech",
-        headers={"api-subscription-key": api_key},
-        json={
-            "text": text,
-            "language_code": language,
-            "model": "bulbul:v2",
-            "enable_preprocessing": True,
-        },
-        timeout=15,
-    )
-    response.raise_for_status()
-    audio_b64 = response.json().get("audios", [""])[0]
-    return base64.b64decode(audio_b64)
+    try:
+        tts = gTTS(text=text, lang=language)
+    except ValueError:
+        tts = gTTS(text=text, lang="hi")
+    fp = io.BytesIO()
+    tts.write_to_fp(fp)
+    fp.seek(0)
+    return fp.read()
 
 def analyse_price_fairness(
     crop: str,
@@ -72,12 +60,7 @@ def analyse_price_fairness(
     max_price: float,
     language: str,
 ) -> str:
-    """
-    Ask Sarvam LLM if the dealer's offered price is fair.
-    Returns plain text analysis in the farmer's language.
-    """
-    api_key = current_app.config.get("SARVAM_API_KEY")
-
+    model = _get_model()
     diff_pct = ((offered_price - modal_price) / modal_price) * 100
     verdict = "good" if diff_pct >= -5 else "bad"
 
@@ -99,26 +82,10 @@ Respond ONLY in the language code: {language}
 Be simple, direct, and speak as if talking to a rural farmer.
 Do not use technical jargon.
 """
-
-    response = requests.post(
-        "https://api.sarvam.ai/v1/chat/completions",
-        headers={
-            "api-subscription-key": api_key,
-            "Content-Type": "application/json",
-        },
-        json={
-            "model": "meta-llama-3-8b-instruct",
-            "messages": [{"role": "user", "content": prompt}],
-            "max_tokens": 200,
-        },
-        timeout=20,
-    )
-    response.raise_for_status()
-    message = response.json().get("choices", [{}])[0].get("message", {})
-    content = message.get("content")
-    if not content: return "AI analysis could not be generated at this time."
-    return content.strip()
-
+    response = model.generate_content(prompt)
+    if not response.text:
+        return "AI analysis could not be generated at this time."
+    return response.text.strip()
 
 def rank_dealers(
     crop: str,
@@ -127,16 +94,10 @@ def rank_dealers(
     modal_price: float,
     language: str,
 ) -> str:
-    """
-    Ask Sarvam LLM to rank dealers and explain why.
-    dealers: list of dicts with keys: name, price_per_quintal, city, rating, payment_terms
-    Returns plain text ranking in farmer's language.
-    """
-    api_key = current_app.config.get("SARVAM_API_KEY")
-
+    model = _get_model()
     dealer_lines = "\n".join([
         f"{i+1}. {d['name']} — Phone: {d['phone']}, Address: {d['city']}"
-        for i, d in enumerate(dealers[:10])  # max 10 dealers to LLM
+        for i, d in enumerate(dealers[:10])
     ])
 
     prompt = f"""
@@ -155,25 +116,10 @@ Format YOUR ENTIRE RESPONSE EXACTLY like this (NO introductory text, NO extra re
 
 Respond ONLY in language code: {language}.
 """
-
-    response = requests.post(
-        "https://api.sarvam.ai/v1/chat/completions",
-        headers={
-            "api-subscription-key": api_key,
-            "Content-Type": "application/json",
-        },
-        json={
-            "model": "meta-llama-3-8b-instruct",
-            "messages": [{"role": "user", "content": prompt}],
-            "max_tokens": 300,
-        },
-        timeout=20,
-    )
-    response.raise_for_status()
-    message = response.json().get("choices", [{}])[0].get("message", {})
-    content = message.get("content")
-    if not content: return "AI analysis could not be generated at this time."
-    return content.strip()
+    response = model.generate_content(prompt)
+    if not response.text:
+        return "AI analysis could not be generated at this time."
+    return response.text.strip()
 
 def rank_farmers(
     crop: str,
@@ -181,13 +127,7 @@ def rank_farmers(
     farmers: list,
     modal_price: float,
 ) -> str:
-    """
-    Ask Sarvam LLM to rank farmers for a dealer.
-    farmers: list of dicts with keys: name, price_per_quintal, city, quantity, quality, has_transport
-    Returns plain text ranking in English (dealer side = English only).
-    """
-    api_key = current_app.config.get("SARVAM_API_KEY")
-
+    model = _get_model()
     farmer_lines = "\n".join([
         f"{i+1}. {f['name']} — asking ₹{f['price_per_quintal']}/q, "
         f"located in {f['city']}, quantity {f['quantity']} quintals, "
@@ -214,23 +154,7 @@ Then add one line of overall advice for the dealer.
 
 Respond in English. Keep it concise and professional.
 """
-
-    response = requests.post(
-        "https://api.sarvam.ai/v1/chat/completions",
-        headers={
-            "api-subscription-key": api_key,
-            "Content-Type": "application/json",
-        },
-        json={
-            "model": "meta-llama-3-8b-instruct",
-            "messages": [{"role": "user", "content": prompt}],
-            "max_tokens": 300,
-        },
-        timeout=20,
-    )
-    response.raise_for_status()
-    message = response.json().get("choices", [{}])[0].get("message", {})
-    content = message.get("content")
-    if not content:
+    response = model.generate_content(prompt)
+    if not response.text:
         return "AI analysis could not be generated at this time."
-    return content.strip()
+    return response.text.strip()

@@ -127,6 +127,7 @@ def analyse_farmers():
         user = User.query.get(fp.farmer_id)
         farmers.append({
             "name": user.name if user else "Unknown",
+            "phone": user.phone if user else "Unknown",
             "price_per_quintal": fp.price_per_quintal,
             "city": fp.city,
             "quantity": fp.quantity,

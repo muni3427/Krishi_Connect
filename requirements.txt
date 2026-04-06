@@ -6,3 +6,5 @@ werkzeug
 requests
 pandas
 apscheduler
+google-generativeai
+gtts
