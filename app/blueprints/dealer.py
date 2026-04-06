@@ -4,8 +4,8 @@ from app.models import FarmerProfile, DealerProfile, User
 from app.services.sarvam_voice import rank_farmers
 from app.services.market_prices import get_prices_for_commodity
 from flask import jsonify, request, render_template
-from flask_login import login_required, current_user
-from app.services.market_prices import get_prices_for_commodity
+
+
 
 dealer_bp = Blueprint("dealer", __name__, url_prefix="/dealer")
 
