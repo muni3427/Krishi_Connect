@@ -1,6 +1,10 @@
 from flask import Blueprint, render_template, request, jsonify
 from flask_login import login_required, current_user
 from app.models import FarmerProfile, DealerProfile, User
+from app.services.sarvam_voice import rank_farmers
+from app.services.market_prices import get_prices_for_commodity
+from flask import jsonify, request, render_template
+from flask_login import login_required, current_user
 from app.services.market_prices import get_prices_for_commodity
 
 dealer_bp = Blueprint("dealer", __name__, url_prefix="/dealer")
@@ -72,3 +76,63 @@ def mandi_prices(crop):
         }
         for r in rows
     ])
+
+@dealer_bp.route("/analyse/farmers", methods=["POST"])
+@login_required
+def analyse_farmers():
+    """
+    Dealer taps Analyse button.
+    Sarvam LLM ranks top 3 farmers for the dealer's crop.
+    Returns text ranking only (no audio on dealer side).
+    """
+    profile = DealerProfile.query.filter_by(dealer_id=current_user.id).first_or_404()
+    crop = profile.crop_type
+
+    if not crop:
+        return jsonify({"error": "Update your crop type in profile first"}), 400
+
+    # Fetch matching farmers from DB
+    farmer_profiles = (
+        FarmerProfile.query
+        .filter(FarmerProfile.crop_type.ilike(f"%{crop}%"))
+        .limit(10)
+        .all()
+    )
+
+    if not farmer_profiles:
+        return jsonify({"error": f"No farmers found selling {crop}"}), 404
+
+    # Build farmer list for LLM
+    farmers = []
+    for fp in farmer_profiles:
+        user = User.query.get(fp.farmer_id)
+        farmers.append({
+            "name": user.name if user else "Unknown",
+            "price_per_quintal": fp.price_per_quintal,
+            "city": fp.city,
+            "quantity": fp.quantity,
+            "quality": fp.quality,
+            "has_transport": fp.has_transport,
+        })
+
+    # Get mandi modal price for context
+    prices = get_prices_for_commodity(crop)
+    modal_price = prices[0].modal_price if prices else 0
+
+    # Get LLM ranking
+    try:
+        ranking_text = rank_farmers(
+            crop=crop,
+            dealer_city=profile.address,
+            farmers=farmers,
+            modal_price=modal_price,
+        )
+    except Exception as e:
+        return jsonify({"error": f"Sarvam LLM failed: {str(e)}"}), 500
+
+    return jsonify({
+        "ranking": ranking_text,
+        "farmers_analysed": len(farmers),
+        "modal_price": modal_price,
+        "crop": crop,
+    })

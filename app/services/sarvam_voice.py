@@ -165,3 +165,59 @@ Keep it simple for a rural farmer. No jargon.
     )
     response.raise_for_status()
     return response.json()["choices"][0]["message"]["content"].strip()
+
+def rank_farmers(
+    crop: str,
+    dealer_city: str,
+    farmers: list,
+    modal_price: float,
+) -> str:
+    """
+    Ask Sarvam LLM to rank farmers for a dealer.
+    farmers: list of dicts with keys: name, price_per_quintal, city, quantity, quality, has_transport
+    Returns plain text ranking in English (dealer side = English only).
+    """
+    api_key = current_app.config.get("SARVAM_API_KEY")
+
+    farmer_lines = "\n".join([
+        f"{i+1}. {f['name']} — asking ₹{f['price_per_quintal']}/q, "
+        f"located in {f['city']}, quantity {f['quantity']} quintals, "
+        f"quality: {f['quality']}, has transport: {'Yes' if f['has_transport'] else 'No'}"
+        for i, f in enumerate(farmers[:10])
+    ])
+
+    prompt = f"""
+You are an agricultural marketplace assistant helping a dealer in {dealer_city}.
+The dealer wants to buy {crop}. Today's modal mandi price is ₹{modal_price}/quintal.
+
+Here are available farmers:
+{farmer_lines}
+
+Rank the TOP 3 farmers for this dealer and explain briefly why each is a good choice.
+Consider: asking price vs mandi rate, quantity available, quality grade, whether farmer has transport (saves dealer logistics cost).
+
+Format your response as:
+1. [Farmer name] — [1 sentence reason]
+2. [Farmer name] — [1 sentence reason]
+3. [Farmer name] — [1 sentence reason]
+
+Then add one line of overall advice for the dealer.
+
+Respond in English. Keep it concise and professional.
+"""
+
+    response = requests.post(
+        "https://api.sarvam.ai/v1/chat/completions",
+        headers={
+            "api-subscription-key": api_key,
+            "Content-Type": "application/json",
+        },
+        json={
+            "model": "sarvam-30b",
+            "messages": [{"role": "user", "content": prompt}],
+            "max_tokens": 300,
+        },
+        timeout=20,
+    )
+    response.raise_for_status()
+    return response.json()["choices"][0]["message"]["content"].strip()
