@@ -10,8 +10,17 @@ STATE_TO_LANGUAGE = {
     "Kerala": "ml-IN",
 }
 
-def get_language(state: str) -> str:
-    return STATE_TO_LANGUAGE.get(state, "hi-IN")  # fallback to Hindi
+def get_language(state_or_lang: str) -> str:
+    valid_langs = ["hi-IN", "kn-IN", "ta-IN", "te-IN", "ml-IN", "mr-IN", "bn-IN", "gu-IN", "or-IN", "pa-IN", "en-IN"]
+    if state_or_lang in valid_langs:
+        return state_or_lang
+    
+    # Handle two-letter selections from profile
+    short_map = {"hi": "hi-IN", "kn": "kn-IN", "ta": "ta-IN", "te": "te-IN", "ml": "ml-IN", "en": "en-IN"}
+    if state_or_lang in short_map:
+        return short_map[state_or_lang]
+
+    return STATE_TO_LANGUAGE.get(state_or_lang, "hi-IN")  # fallback to state mapping
 
 
 def speech_to_text(audio_bytes: bytes, state: str) -> str:
@@ -46,7 +55,7 @@ def text_to_speech(text: str, state: str) -> bytes:
         json={
             "text": text,
             "language_code": language,
-            "model": "bulbul:v3",
+            "model": "bulbul:v2",
             "enable_preprocessing": True,
         },
         timeout=15,
@@ -98,14 +107,17 @@ Do not use technical jargon.
             "Content-Type": "application/json",
         },
         json={
-            "model": "sarvam-30b",
+            "model": "meta-llama-3-8b-instruct",
             "messages": [{"role": "user", "content": prompt}],
             "max_tokens": 200,
         },
         timeout=20,
     )
     response.raise_for_status()
-    return response.json()["choices"][0]["message"]["content"].strip()
+    message = response.json().get("choices", [{}])[0].get("message", {})
+    content = message.get("content")
+    if not content: return "AI analysis could not be generated at this time."
+    return content.strip()
 
 
 def rank_dealers(
@@ -123,9 +135,7 @@ def rank_dealers(
     api_key = current_app.config.get("SARVAM_API_KEY")
 
     dealer_lines = "\n".join([
-        f"{i+1}. {d['name']} — ₹{d['price_per_quintal']}/q, "
-        f"located in {d['city']}, rating {d['rating']}/5, "
-        f"payment: {d['payment_terms']}"
+        f"{i+1}. {d['name']} — Phone: {d['phone']}, Address: {d['city']}"
         for i, d in enumerate(dealers[:10])  # max 10 dealers to LLM
     ])
 
@@ -136,18 +146,14 @@ The farmer wants to sell {crop}. Today's modal mandi price is ₹{modal_price}/q
 Here are available dealers:
 {dealer_lines}
 
-Rank the TOP 3 dealers for this farmer and explain briefly why each is a good choice.
-Consider: price offered vs mandi rate, proximity to farmer, dealer rating, payment terms.
+List the TOP 3 dealers. Provide EXACTLY one line per dealer. Stop.
 
-Format your response as:
-1. [Dealer name] — [1 sentence reason]
-2. [Dealer name] — [1 sentence reason]  
-3. [Dealer name] — [1 sentence reason]
+Format YOUR ENTIRE RESPONSE EXACTLY like this (NO introductory text, NO extra reasons):
+1. [Dealer name], Phone: [phone], Address: [city]
+2. [Dealer name], Phone: [phone], Address: [city]
+3. [Dealer name], Phone: [phone], Address: [city]
 
-Then add one line of overall advice.
-
-Respond ONLY in language code: {language}
-Keep it simple for a rural farmer. No jargon.
+Respond ONLY in language code: {language}.
 """
 
     response = requests.post(
@@ -157,14 +163,17 @@ Keep it simple for a rural farmer. No jargon.
             "Content-Type": "application/json",
         },
         json={
-            "model": "sarvam-m",
+            "model": "meta-llama-3-8b-instruct",
             "messages": [{"role": "user", "content": prompt}],
             "max_tokens": 300,
         },
         timeout=20,
     )
     response.raise_for_status()
-    return response.json()["choices"][0]["message"]["content"].strip()
+    message = response.json().get("choices", [{}])[0].get("message", {})
+    content = message.get("content")
+    if not content: return "AI analysis could not be generated at this time."
+    return content.strip()
 
 def rank_farmers(
     crop: str,
@@ -213,11 +222,15 @@ Respond in English. Keep it concise and professional.
             "Content-Type": "application/json",
         },
         json={
-            "model": "sarvam-30b",
+            "model": "meta-llama-3-8b-instruct",
             "messages": [{"role": "user", "content": prompt}],
             "max_tokens": 300,
         },
         timeout=20,
     )
     response.raise_for_status()
-    return response.json()["choices"][0]["message"]["content"].strip()
+    message = response.json().get("choices", [{}])[0].get("message", {})
+    content = message.get("content")
+    if not content:
+        return "AI analysis could not be generated at this time."
+    return content.strip()

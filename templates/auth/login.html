@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+
+{% block title %}Welcome | Krishi-Connect{% endblock %}
+
+{% block content %}
+<div class="flex-grow flex items-center justify-center px-4 sm:px-6 relative w-full max-w-7xl mx-auto min-h-[80vh]" 
+     x-data="{ isRegister: window.location.hash === '#register' }"
+     @hashchange.window="isRegister = (window.location.hash === '#register')">
+    
+    <div class="flex flex-col lg:flex-row w-full bg-white/60 backdrop-blur-2xl rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60 overflow-hidden transform transition-all duration-700 max-w-5xl">
+        
+        <!-- Imagery / Branding Section -->
+        <div class="relative w-full lg:w-1/2 p-8 lg:p-12 flex flex-col justify-center overflow-hidden bg-agri-600">
+            <!-- Background Image -->
+            <div class="absolute inset-0 z-0">
+                <img src="https://images.unsplash.com/photo-1605000797499-95a51c5269ae?ixlib=rb-4.0.3&auto=format&fit=crop&w=1400&q=80" alt="Farming Landscape" class="w-full h-full object-cover opacity-30 mix-blend-multiply">
+                <div class="absolute inset-0 bg-gradient-to-br from-agri-800/80 to-agri-600/90 mix-blend-overlay"></div>
+            </div>
+            
+            <div class="relative z-10 text-white animate-slide-up">
+                <h2 x-show="!isRegister" x-transition.opacity.duration.500ms class="text-4xl sm:text-5xl font-bold tracking-tight mb-6">
+                    Grow Your Reach,<br>
+                    <span class="text-earth-300">Know Your Value.</span>
+                </h2>
+                <h2 x-show="isRegister" x-cloak x-transition.opacity.duration.500ms class="text-4xl sm:text-5xl font-bold tracking-tight mb-6 hidden" :class="{ 'hidden': false }">
+                    Join the Network,<br>
+                    <span class="text-earth-300">Empower Tomorrow.</span>
+                </h2>
+                
+                <p class="text-agri-100/90 text-lg sm:text-xl font-light leading-relaxed max-w-md">
+                    Krishi-Connect connects farmers and dealers directly, powered by AI voice analysis and real-time mandi prices to ensure fair trade for everyone.
+                </p>
+                
+                <div class="mt-10 flex gap-4">
+                    <div class="flex flex-col gap-1 items-center bg-white/10 rounded-xl p-4 backdrop-blur-md border border-white/10 flex-1 hover-lift">
+                        <span class="text-3xl font-bold text-earth-300">10K+</span>
+                        <span class="text-sm font-medium text-agri-50">Active Users</span>
+                    </div>
+                    <div class="flex flex-col gap-1 items-center bg-white/10 rounded-xl p-4 backdrop-blur-md border border-white/10 flex-1 hover-lift">
+                        <span class="text-3xl font-bold text-earth-300">Fair</span>
+                        <span class="text-sm font-medium text-agri-50">Price Discovery</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Forms Section -->
+        <div class="w-full lg:w-1/2 p-8 lg:p-12 relative animate-slide-up delay-100">
+            <!-- Login Form -->
+            <div x-show="!isRegister" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-x-8" x-transition:enter-end="opacity-100 translate-x-0" x-transition:leave="transition ease-in duration-200 absolute inset-0" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0 -translate-x-8 p-8" class="h-full flex flex-col justify-center">
+                
+                <div class="mb-8">
+                    <h3 class="text-3xl font-bold text-gray-800 mb-2 tracking-tight">Welcome back</h3>
+                    <p class="text-gray-500">Please enter your details to sign in.</p>
+                </div>
+
+                <form action="{{ url_for('auth.login') }}" method="POST" class="space-y-5">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                        <input type="tel" name="phone" required class="input-field" placeholder="+91 98765 43210">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                        <input type="password" name="password" required class="input-field" placeholder="••••••••">
+                    </div>
+                    
+                    <div class="flex items-center justify-between mt-2 mb-6">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <!-- Removed remember me config to match auth.py -->
+                        </label>
+                        <a href="#" class="text-sm font-medium text-agri-600 hover:text-agri-700 hover:underline">Forgot password?</a>
+                    </div>
+                    
+                    <button type="submit" class="btn-primary w-full py-3.5 text-lg">Sign In</button>
+                </form>
+
+                <p class="mt-8 text-center text-gray-600">
+                    Don't have an account? 
+                    <a href="#register" class="font-semibold text-agri-600 hover:text-agri-800 transition-colors">Sign up now</a>
+                </p>
+            </div>
+
+            <!-- Register Form -->
+            <div x-show="isRegister" x-cloak x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-x-8" x-transition:enter-end="opacity-100 translate-x-0" x-transition:leave="transition ease-in duration-200 absolute inset-0" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0 -translate-x-8 p-8" class="hidden" :class="{ 'hidden': false }">
+                
+                <div class="mb-6">
+                    <h3 class="text-3xl font-bold text-gray-800 mb-2 tracking-tight">Create Account</h3>
+                    <p class="text-gray-500 text-sm">Join the network to find buyers or sellers.</p>
+                </div>
+
+                <form action="{{ url_for('auth.register') }}" method="POST" class="space-y-4">
+                    
+                    <div class="flex gap-4">
+                        <div class="flex-1">
+                            <label class="flex items-center gap-2 p-3 border border-gray-200 rounded-xl cursor-pointer hover:bg-agri-50 hover:border-agri-200 transition">
+                                <input type="radio" name="role" value="farmer" checked class="text-agri-600 focus:ring-agri-500">
+                                <span class="font-medium text-gray-800">I am a Farmer</span>
+                            </label>
+                        </div>
+                        <div class="flex-1">
+                            <label class="flex items-center gap-2 p-3 border border-gray-200 rounded-xl cursor-pointer hover:bg-agri-50 hover:border-agri-200 transition">
+                                <input type="radio" name="role" value="dealer" class="text-agri-600 focus:ring-agri-500">
+                                <span class="font-medium text-gray-800">I am a Dealer</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-4">
+                        <div class="flex-1">
+                            <input type="text" name="first_name" required class="input-field" placeholder="First Name">
+                        </div>
+                        <div class="flex-1">
+                            <input type="text" name="last_name" class="input-field" placeholder="Last Name">
+                        </div>
+                    </div>
+
+                    <input type="tel" name="phone" required class="input-field" placeholder="Phone Number (+91...)">
+                    
+                    <div class="flex gap-4">
+                        <div class="flex-1">
+                            <select name="district" required class="input-field bg-transparent appearance-none">
+                                <option value="" disabled selected>District</option>
+                                <option value="Bangalore">Bangalore</option>
+                                <option value="Pune">Pune</option>
+                                <option value="Nashik">Nashik</option>
+                                <option value="Ludhiana">Ludhiana</option>
+                                <option value="Agra">Agra</option>
+                                <option value="Belgaum">Belgaum</option>
+                                <option value="Bhopal">Bhopal</option>
+                                <option value="Indore">Indore</option>
+                            </select>
+                        </div>
+                        <div class="w-1/3">
+                            <select name="language_pref" class="input-field bg-transparent appearance-none">
+                                <option value="en">English</option>
+                                <option value="hi">हिंदी (Hindi)</option>
+                                <option value="kn">ಕನ್ನಡ (Kannada)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <input type="password" name="password" required class="input-field" placeholder="Password (Min 8 characters)">
+
+                    <button type="submit" class="btn-primary w-full py-3.5 text-lg mt-2 shadow-earth-500/20 shadow-xl bg-gradient-to-r from-agri-500 to-agri-600 border-none">Create Account</button>
+                </form>
+
+                <p class="mt-6 text-center text-gray-600 text-sm">
+                    Already have an account? 
+                    <a href="#login" class="font-semibold text-agri-600 hover:text-agri-800 transition-colors">Sign in</a>
+                </p>
+            </div>
+            
+        </div>
+    </div>
+</div>
+{% endblock %}

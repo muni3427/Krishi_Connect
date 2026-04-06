@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+
+{% block title %}Crop Pools | Krishi-Connect{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full animate-slide-up" x-data="{ createModalOpen: false, joinModalOpen: false, activePoolId: null, activePoolTarget: 0, activePoolCollected: 0 }">
+    
+    <!-- Header -->
+    <div class="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+            <h1 class="text-3xl font-bold tracking-tight text-gray-900">Community Crop Pools</h1>
+            <p class="text-gray-500 mt-1">Combine your harvest with nearby farmers to attract larger buyers and better prices.</p>
+        </div>
+        <div>
+            <button @click="createModalOpen = true" class="btn-primary shadow-lg shadow-earth-500/20">
+                <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                Create New Pool
+            </button>
+        </div>
+    </div>
+
+    <!-- Active Pools Grid -->
+    {% if not pools %}
+        <div class="flex flex-col items-center justify-center p-12 bg-white/80 rounded-3xl border border-dashed border-gray-300 text-center">
+            <svg class="w-16 h-16 text-gray-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+            <h3 class="text-lg font-bold text-gray-900">No active pools near you</h3>
+            <p class="text-gray-500 mt-1">There are no farmers currently pooling {{ profile.crop_type }} in {{ profile.state }}.</p>
+            <button @click="createModalOpen = true" class="mt-4 text-earth-600 font-semibold hover:underline">Be the first to start a pool</button>
+        </div>
+    {% else %}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for item in pools %}
+            <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 hover:shadow-md transition group overflow-hidden relative flex flex-col h-full">
+                <!-- Status badge -->
+                <div class="absolute top-0 right-0 mt-4 mr-4">
+                    {% if item.is_member %}
+                        <span class="px-2.5 py-1 text-xs font-bold bg-green-100 text-green-700 rounded-full">Joined</span>
+                    {% else %}
+                        <span class="px-2.5 py-1 text-xs font-bold bg-gray-100 text-gray-600 rounded-full">Open</span>
+                    {% endif %}
+                </div>
+
+                <h3 class="text-xl font-bold text-gray-900 mb-1 capitalize">{{ item.pool.crop_type }} Pool</h3>
+                <p class="text-sm text-gray-500 flex items-center gap-1 mb-4">
+                    <svg class="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                    {{ item.pool.city }}, {{ item.pool.state }}
+                </p>
+
+                <div class="space-y-3 mb-6">
+                    <div class="flex justify-between items-end">
+                        <span class="text-sm text-gray-500">Collected Progress</span>
+                        <span class="text-sm font-bold text-gray-900">{{ item.total_collected }} / {{ item.pool.target_quantity }} qt</span>
+                    </div>
+                    <!-- Progress Bar -->
+                    <div class="w-full bg-gray-100 rounded-full h-2.5">
+                        <div class="bg-earth-500 h-2.5 rounded-full" style="width: {{ item.progress_percent }}%"></div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-gray-100">
+                        <div>
+                            <p class="text-xs text-gray-500">Targeting Price</p>
+                            <p class="font-bold text-gray-800">₹{{ item.pool.min_price }}/qt</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-500">Farmers Joined</p>
+                            <p class="font-bold text-gray-800 flex items-center gap-1">
+                                <svg class="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                                {{ item.member_count }}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-auto pt-4">
+                {% if not item.is_member and item.progress_percent < 100 %}
+                    <button @click="activePoolId = {{ item.pool.id }}; activePoolTarget = {{ item.pool.target_quantity }}; activePoolCollected = {{ item.total_collected }}; joinModalOpen = true" class="w-full py-2.5 bg-gray-50 hover:bg-earth-50 text-earth-700 font-semibold rounded-xl border border-gray-200 transition-colors">
+                        Add to this Pool
+                    </button>
+                {% elif item.is_member %}
+                    <button disabled class="w-full py-2.5 bg-green-50 text-green-700 font-semibold rounded-xl border border-green-100 cursor-not-allowed">
+                        You are in this pool
+                    </button>
+                {% else %}
+                    <button disabled class="w-full py-2.5 bg-gray-100 text-gray-400 font-semibold rounded-xl border border-gray-100 cursor-not-allowed">
+                        Pool Filled
+                    </button>
+                {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <!-- Create Pool Modal -->
+    <div x-show="createModalOpen" class="fixed inset-0 z-50 overflow-y-auto" x-cloak>
+        <div class="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
+            <div x-show="createModalOpen" x-transition.opacity class="fixed inset-0 transition-opacity bg-gray-900 bg-opacity-50" @click="createModalOpen = false"></div>
+            
+            <div x-show="createModalOpen" x-transition.scale class="relative w-full max-w-md transform overflow-hidden rounded-3xl bg-white p-6 text-left align-middle shadow-xl transition-all z-10 mx-auto">
+                <div class="flex justify-between items-center mb-5">
+                    <h3 class="text-xl font-bold leading-6 text-gray-900">Start new {{ profile.crop_type }} Pool</h3>
+                    <button @click="createModalOpen = false" class="text-gray-400 hover:text-gray-500">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                </div>
+                
+                <form action="{{ url_for('farmer.create_pool') }}" method="POST">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Target Pool Size (Quintals)</label>
+                            <input type="number" name="target_quantity" step="0.1" required class="input-field" placeholder="e.g. 50">
+                            <p class="text-xs text-gray-500 mt-1">Total combined quantity needed.</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Minimum Accepted Price (₹/qt)</label>
+                            <input type="number" name="min_price" step="1" required class="input-field" placeholder="e.g. 2800">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Your Initial Contribution (Quintals)</label>
+                            <input type="number" name="initial_quantity" step="0.1" required class="input-field" placeholder="e.g. 10">
+                        </div>
+                        <div class="mt-6">
+                            <button type="submit" class="w-full btn-primary py-2.5">Create Pool</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Join Pool Modal -->
+    <div x-show="joinModalOpen" class="fixed inset-0 z-50 overflow-y-auto" x-cloak>
+        <div class="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
+            <div x-show="joinModalOpen" x-transition.opacity class="fixed inset-0 transition-opacity bg-gray-900 bg-opacity-50" @click="joinModalOpen = false"></div>
+            
+            <div x-show="joinModalOpen" x-transition.scale class="relative w-full max-w-sm transform overflow-hidden rounded-3xl bg-white p-6 text-left align-middle shadow-xl transition-all z-10 mx-auto">
+                <div class="flex justify-between items-center mb-5">
+                    <h3 class="text-xl font-bold leading-6 text-gray-900">Join Pool</h3>
+                    <button @click="joinModalOpen = false" class="text-gray-400 hover:text-gray-500">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                </div>
+                
+                <form action="{{ url_for('farmer.join_pool') }}" method="POST">
+                    <input type="hidden" name="pool_id" :value="activePoolId">
+                    <div class="space-y-4">
+                        <div class="bg-blue-50 text-blue-800 p-3 rounded-xl text-sm border border-blue-100">
+                            Available space: <span class="font-bold" x-text="activePoolTarget - activePoolCollected"></span> quintals
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Your Contribution (Quintals)</label>
+                            <input type="number" name="contributed_qty" step="0.1" required class="input-field" placeholder="e.g. 5" :max="activePoolTarget - activePoolCollected">
+                        </div>
+                        <div class="mt-6">
+                            <button type="submit" class="w-full inline-flex justify-center items-center rounded-xl bg-earth-600 px-5 py-2.5 font-semibold text-white hover:bg-earth-700 transition">Confirm Contribution</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

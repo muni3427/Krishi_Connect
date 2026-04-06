@@ -1,0 +1,93 @@
+/* Custom styles, overriding and enhancing Tailwind */
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+
+html {
+    scroll-behavior: smooth;
+    font-family: 'Outfit', sans-serif;
+}
+
+body {
+    background: linear-gradient(135deg, #eef2e6 0%, #d6e5d8 100%);
+    min-height: 100vh;
+}
+
+/* Glassmorphism utilities */
+.glass {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.05);
+}
+
+.glass-dark {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    box-shadow: 0 8px 32px 0 rgba(80, 100, 80, 0.1);
+}
+
+/* Generic Animation Utilities */
+@keyframes slideUpFade {
+    0% { opacity: 0; transform: translateY(20px); }
+    100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulseSoft {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+.animate-slide-up {
+    animation: slideUpFade 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.delay-100 { animation-delay: 100ms; }
+.delay-200 { animation-delay: 200ms; }
+.delay-300 { animation-delay: 300ms; }
+
+.hover-lift {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.hover-lift:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px -10px rgba(76, 140, 43, 0.3);
+}
+
+/* Flash message animation */
+.flash-message {
+    animation: slideUpFade 0.5s ease-out, fadeOut 0.5s ease-in 4.5s forwards;
+}
+
+@keyframes fadeOut {
+    to { opacity: 0; visibility: hidden; }
+}
+
+/* Forms */
+.input-field {
+    @apply w-full rounded-xl border border-gray-200 bg-white/50 px-4 py-3 text-gray-700 outline-none transition-all focus:border-agri-500 focus:bg-white focus:ring-4 focus:ring-agri-500/10;
+}
+.btn-primary {
+    @apply inline-flex items-center justify-center rounded-xl bg-agri-600 px-6 py-3 font-semibold text-white shadow-lg shadow-agri-600/30 transition-all hover:bg-agri-700 hover:shadow-xl hover:shadow-agri-600/40 transform hover:-translate-y-0.5 active:translate-y-0;
+}
+.btn-secondary {
+    @apply inline-flex items-center justify-center rounded-xl bg-white px-6 py-3 font-semibold text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 transition-all hover:bg-gray-50 transform hover:-translate-y-0.5 active:translate-y-0;
+}
+
+/* Navbar */
+.nav-link {
+    @apply text-gray-600 hover:text-agri-700 font-medium transition-colors duration-200 relative;
+}
+.nav-link::after {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 2px;
+    bottom: -4px;
+    left: 0;
+    background-color: theme('colors.agri.500');
+    transition: width 0.3s ease;
+}
+.nav-link:hover::after {
+    width: 100%;
+}

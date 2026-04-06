@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Profile | Krishi-Connect{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto px-4 sm:px-6 w-full animate-slide-up">
+    
+    <div class="mb-6">
+        <a href="{{ url_for('farmer.dashboard') }}" class="text-sm font-medium text-gray-500 hover:text-agri-600 mb-2 inline-flex items-center">
+            <svg class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+            Back to Dashboard
+        </a>
+        <h1 class="text-3xl font-bold tracking-tight text-gray-900">Update Profile</h1>
+        <p class="text-gray-500 mt-1">Keep your crop details up-to-date so dealers can find you.</p>
+    </div>
+
+    <div class="bg-white/80 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 p-6 sm:p-10 relative overflow-hidden">
+        <!-- Decoration -->
+        <div class="absolute -right-16 -top-16 opacity-5 pointer-events-none">
+            <svg class="w-64 h-64 text-agri-600" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L2 22h20L12 2zm0 4.1L18.4 19H5.6L12 6.1z"/></svg> <!-- Placeholder abstract shape -->
+        </div>
+
+        <form action="{{ url_for('farmer.edit_profile') }}" method="POST" class="space-y-6 relative z-10">
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <!-- Crop Type -->
+                <div class="sm:col-span-2">
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Primary Crop Type</label>
+                    <input type="text" name="crop_type" value="{{ profile.crop_type or '' }}" class="input-field" placeholder="e.g. Tomato, Onion, Wheat" required>
+                    <p class="text-xs text-gray-500 mt-1 pl-1">Dealers search specifically by crop type name.</p>
+                </div>
+
+                <!-- Quantity -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Available Quantity (Quintals)</label>
+                    <input type="number" step="0.1" name="quantity" value="{{ profile.quantity or '' }}" class="input-field" placeholder="e.g. 50">
+                </div>
+
+                <!-- Price -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Expected Price / Quintal (₹)</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-500 font-medium">₹</div>
+                        <input type="number" step="1" name="price_per_quintal" value="{{ profile.price_per_quintal or '' }}" class="input-field pl-9" placeholder="e.g. 2500">
+                    </div>
+                </div>
+
+                <!-- Quality -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Quality Description</label>
+                    <input type="text" name="quality" value="{{ profile.quality or '' }}" class="input-field" placeholder="e.g. Grade A, Organic">
+                </div>
+
+                <!-- Language Preference -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Voice Assistant Language</label>
+                    <select name="language_pref" class="input-field py-2.5 px-3 block w-full border border-gray-300 rounded-xl focus:ring-agri-500 focus:border-agri-500 bg-white">
+                        <option value="en-IN" {% if profile.language_pref == 'en-IN' %}selected{% endif %}>English (India)</option>
+                        <option value="hi-IN" {% if profile.language_pref == 'hi-IN' %}selected{% endif %}>Hindi</option>
+                        <option value="kn-IN" {% if profile.language_pref == 'kn-IN' %}selected{% endif %}>Kannada</option>
+                        <option value="ta-IN" {% if profile.language_pref == 'ta-IN' %}selected{% endif %}>Tamil</option>
+                        <option value="te-IN" {% if profile.language_pref == 'te-IN' %}selected{% endif %}>Telugu</option>
+                        <option value="ml-IN" {% if profile.language_pref == 'ml-IN' %}selected{% endif %}>Malayalam</option>
+                        <option value="mr-IN" {% if profile.language_pref == 'mr-IN' %}selected{% endif %}>Marathi</option>
+                        <option value="bn-IN" {% if profile.language_pref == 'bn-IN' %}selected{% endif %}>Bengali</option>
+                        <option value="gu-IN" {% if profile.language_pref == 'gu-IN' %}selected{% endif %}>Gujarati</option>
+                        <option value="pa-IN" {% if profile.language_pref == 'pa-IN' %}selected{% endif %}>Punjabi</option>
+                        <option value="or-IN" {% if profile.language_pref == 'or-IN' %}selected{% endif %}>Odia</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Has Transport -->
+            <div class="pt-4 mt-2 border-t border-gray-100">
+                <label class="flex items-start gap-4 cursor-pointer p-4 bg-gray-50 rounded-xl hover:bg-agri-50 transition border border-transparent hover:border-agri-100">
+                    <div class="flex items-center h-5 mt-0.5">
+                        <input type="checkbox" name="has_transport" class="w-5 h-5 text-agri-600 rounded border-gray-300 focus:ring-agri-500 focus:ring-2" {% if profile.has_transport %}checked{% endif %}>
+                    </div>
+                    <div>
+                        <span class="font-semibold text-gray-800">I can transport my harvest</span>
+                        <p class="text-sm text-gray-500 mt-1 leading-snug">Check this box if you have access to tractors or logistics to deliver produce to a specified market.</p>
+                    </div>
+                </label>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex items-center justify-end gap-4 pt-4">
+                <a href="{{ url_for('farmer.dashboard') }}" class="text-sm font-semibold text-gray-600 hover:text-gray-900 border-b border-transparent hover:border-gray-900 transition">Cancel</a>
+                <button type="submit" class="btn-primary shadow-agri-500/20 shadow-lg px-8">Save Changes</button>
+            </div>
+            
+        </form>
+    </div>
+</div>
+{% endblock %}

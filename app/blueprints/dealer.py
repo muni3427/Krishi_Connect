@@ -17,11 +17,26 @@ def dashboard():
     # Show farmers selling the same crop type as dealer's interest
     farmers = []
     if profile and profile.crop_type:
-        farmers = (
+        f_list = (
             FarmerProfile.query
             .filter(FarmerProfile.crop_type.ilike(f"%{profile.crop_type}%"))
             .all()
         )
+        for f in f_list:
+            u = User.query.get(f.farmer_id)
+            farmers.append({
+                "farmer_id": f.farmer_id,
+                "name": u.name if u else "Unknown",
+                "phone": u.phone if u else "Unknown",
+                "village": f.village,
+                "city": f.city,
+                "state": f.state,
+                "crop_type": f.crop_type,
+                "quantity": f.quantity,
+                "price_per_quintal": f.price_per_quintal,
+                "quality": f.quality,
+                "has_transport": f.has_transport,
+            })
     return render_template("dealer/dashboard.html", profile=profile, farmers=farmers)
 
 
@@ -45,10 +60,14 @@ def search_farmers():
         query = query.filter(FarmerProfile.price_per_quintal <= max_price)
 
     results = query.limit(50).all()
+    farmers = []
 
-    return jsonify([
-        {
+    for f in results:
+        u = User.query.get(f.farmer_id)
+        farmers.append({
             "farmer_id": f.farmer_id,
+            "name": u.name if u else "Unknown",
+            "phone": u.phone if u else "Unknown",
             "village": f.village,
             "city": f.city,
             "state": f.state,
@@ -57,9 +76,9 @@ def search_farmers():
             "price_per_quintal": f.price_per_quintal,
             "quality": f.quality,
             "has_transport": f.has_transport,
-        }
-        for f in results
-    ])
+        })
+
+    return jsonify(farmers)
 
 
 @dealer_bp.route("/prices/<crop>")
@@ -128,7 +147,9 @@ def analyse_farmers():
             modal_price=modal_price,
         )
     except Exception as e:
-        return jsonify({"error": f"Sarvam LLM failed: {str(e)}"}), 500
+        ranking_text = "AI Services are currently busy. Top Local Farmers Found:\n"
+        for i, f in enumerate(farmers[:3]):
+            ranking_text += f"{i+1}. {f['name']} — Phone: {f['phone']}, Price: ₹{f['price_per_quintal']}/q\n"
 
     return jsonify({
         "ranking": ranking_text,

@@ -1,0 +1,83 @@
+Traceback (most recent call last):
+  File "C:\Users\munir\OneDrive\Desktop\AgriFlow\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1815, in _execute_context
+    context = constructor(
+              ^^^^^^^^^^^^
+  File "C:\Users\munir\OneDrive\Desktop\AgriFlow\.venv\Lib\site-packages\sqlalchemy\engine\default.py", line 1494, in _init_compiled
+    l_param: List[Any] = [
+                         ^
+  File "C:\Users\munir\OneDrive\Desktop\AgriFlow\.venv\Lib\site-packages\sqlalchemy\engine\default.py", line 1496, in <listcomp>
+    flattened_processors[key](compiled_params[key])
+  File "C:\Users\munir\OneDrive\Desktop\AgriFlow\.venv\Lib\site-packages\sqlalchemy\dialects\sqlite\base.py", line 1287, in process
+    raise TypeError(
+TypeError: SQLite Date type only accepts Python date objects as input.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\munir\OneDrive\Desktop\AgriFlow\test_fetch.py", line 8, in <module>
+    fetch_and_store_prices(app)
+  File "C:\Users\munir\OneDrive\Desktop\AgriFlow\app\services\market_prices.py", line 46, in fetch_and_store_prices
+    ).first()
+      ^^^^^^^
+  File "C:\Users\munir\OneDrive\Desktop\AgriFlow\.venv\Lib\site-packages\sqlalchemy\orm\query.py", line 2766, in first
+    return self.limit(1)._iter().first()  # type: ignore
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\munir\OneDrive\Desktop\AgriFlow\.venv\Lib\site-packages\sqlalchemy\orm\query.py", line 2864, in _iter
+    result: Union[ScalarResult[_T], Result[_T]] = self.session.execute(
+                                                  ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\munir\OneDrive\Desktop\AgriFlow\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2351, in execute
+    return self._execute_internal(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\munir\OneDrive\Desktop\AgriFlow\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2228, in _execute_internal
+    ) = compile_state_cls.orm_pre_session_exec(
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\munir\OneDrive\Desktop\AgriFlow\.venv\Lib\site-packages\sqlalchemy\orm\context.py", line 577, in orm_pre_session_exec
+    session._autoflush()
+  File "C:\Users\munir\OneDrive\Desktop\AgriFlow\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 3051, in _autoflush
+    raise e.with_traceback(sys.exc_info()[2])
+  File "C:\Users\munir\OneDrive\Desktop\AgriFlow\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 3040, in _autoflush
+    self.flush()
+  File "C:\Users\munir\OneDrive\Desktop\AgriFlow\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 4331, in flush
+    self._flush(objects)
+  File "C:\Users\munir\OneDrive\Desktop\AgriFlow\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 4466, in _flush
+    with util.safe_reraise():
+  File "C:\Users\munir\OneDrive\Desktop\AgriFlow\.venv\Lib\site-packages\sqlalchemy\util\langhelpers.py", line 121, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "C:\Users\munir\OneDrive\Desktop\AgriFlow\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 4427, in _flush
+    flush_context.execute()
+  File "C:\Users\munir\OneDrive\Desktop\AgriFlow\.venv\Lib\site-packages\sqlalchemy\orm\unitofwork.py", line 466, in execute
+    rec.execute(self)
+  File "C:\Users\munir\OneDrive\Desktop\AgriFlow\.venv\Lib\site-packages\sqlalchemy\orm\unitofwork.py", line 642, in execute
+    util.preloaded.orm_persistence.save_obj(
+  File "C:\Users\munir\OneDrive\Desktop\AgriFlow\.venv\Lib\site-packages\sqlalchemy\orm\persistence.py", line 93, in save_obj
+    _emit_insert_statements(
+  File "C:\Users\munir\OneDrive\Desktop\AgriFlow\.venv\Lib\site-packages\sqlalchemy\orm\persistence.py", line 1233, in _emit_insert_statements
+    result = connection.execute(
+             ^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\munir\OneDrive\Desktop\AgriFlow\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1419, in execute
+    return meth(
+           ^^^^^
+  File "C:\Users\munir\OneDrive\Desktop\AgriFlow\.venv\Lib\site-packages\sqlalchemy\sql\elements.py", line 527, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\munir\OneDrive\Desktop\AgriFlow\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1641, in _execute_clauseelement
+    ret = self._execute_context(
+          ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\munir\OneDrive\Desktop\AgriFlow\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1821, in _execute_context
+    self._handle_dbapi_exception(
+  File "C:\Users\munir\OneDrive\Desktop\AgriFlow\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 2363, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "C:\Users\munir\OneDrive\Desktop\AgriFlow\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1815, in _execute_context
+    context = constructor(
+              ^^^^^^^^^^^^
+  File "C:\Users\munir\OneDrive\Desktop\AgriFlow\.venv\Lib\site-packages\sqlalchemy\engine\default.py", line 1494, in _init_compiled
+    l_param: List[Any] = [
+                         ^
+  File "C:\Users\munir\OneDrive\Desktop\AgriFlow\.venv\Lib\site-packages\sqlalchemy\engine\default.py", line 1496, in <listcomp>
+    flattened_processors[key](compiled_params[key])
+  File "C:\Users\munir\OneDrive\Desktop\AgriFlow\.venv\Lib\site-packages\sqlalchemy\dialects\sqlite\base.py", line 1287, in process
+    raise TypeError(
+sqlalchemy.exc.StatementError: (raised as a result of Query-invoked autoflush; consider using a session.no_autoflush block if this flush is occurring prematurely)
+(builtins.TypeError) SQLite Date type only accepts Python date objects as input.
+[SQL: INSERT INTO market_price (commodity, market, district, state, min_price, max_price, modal_price, arrival_date, fetched_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)]
+[parameters: [{'market': 'Karimangalam(Uzhavar Sandhai)', 'max_price': 2800.0, 'modal_price': 2700.0, 'commodity': 'Potato', 'state': 'Tamil Nadu', 'arrival_date': '06/04/2026', 'district': 'Dharmapuri', 'fetched_at': datetime.datetime(2026, 4, 6, 6, 5, 51, 164765), 'min_price': 2600.0}]]

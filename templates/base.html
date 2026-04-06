@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Krishi-Connect{% endblock %}</title>
+    
+    <!-- Alpine.js for lightweight UI state management -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    <!-- Tailwind CSS (via official CDN) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        agri: {
+                            50: '#f2f8f3',
+                            100: '#e1efe4',
+                            200: '#c3e0ca',
+                            300: '#97c8a4',
+                            400: '#66a87b',
+                            500: '#4c8c5c',
+                            600: '#3a6f47',
+                            700: '#30583a',
+                            800: '#284631',
+                            900: '#213a2a',
+                        },
+                        earth: {
+                            50: '#fdfbf7',
+                            100: '#fbf5eb',
+                            200: '#f6e8cc',
+                            300: '#eed1a0',
+                            400: '#e3b56c',
+                            500: '#da9b43',
+                            600: '#cc8135',
+                            700: '#ab652d',
+                            800: '#8b5129',
+                            900: '#724324',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Outfit', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="text-gray-800 antialiased relative overflow-x-hidden">
+    
+    <!-- Decorative background elements -->
+    <div class="fixed top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
+        <div class="absolute -top-40 -right-40 w-96 h-96 rounded-full bg-agri-300/20 blur-3xl"></div>
+        <div class="absolute top-[20%] -left-20 w-72 h-72 rounded-full bg-earth-300/20 blur-3xl"></div>
+        <div class="absolute -bottom-20 right-[10%] w-80 h-80 rounded-full bg-agri-400/10 blur-3xl"></div>
+    </div>
+
+    <header class="sticky top-0 z-50 glass border-b border-white/20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-20 items-center">
+                <!-- Logo -->
+                <div class="flex-shrink-0 flex items-center">
+                    <a href="{{ url_for('auth.login_page') }}" class="flex items-center gap-2 group">
+                        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-agri-400 to-agri-600 flex items-center justify-center text-white shadow-lg transform transition group-hover:rotate-12 group-hover:scale-105">
+                            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 12v6m0 0l-2-2m2 2l2-2" /> <!-- Custom leafy/cloud vector could go here -->
+                            </svg>
+                        </div>
+                        <span class="text-2xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-agri-700 to-agri-900">
+                            Krishi-Connect
+                        </span>
+                    </a>
+                </div>
+                
+                <!-- Desktop Navigation -->
+                <div class="hidden sm:flex sm:items-center sm:gap-8">
+                    {% if current_user.is_authenticated %}
+                        {% if current_user.role == 'farmer' %}
+                            <a href="{{ url_for('farmer.dashboard') }}" class="nav-link">Dashboard</a>
+                            <a href="{{ url_for('farmer.view_pools') }}" class="nav-link">Crop Pools</a>
+                            <a href="{{ url_for('farmer.edit_profile') }}" class="nav-link">Profile</a>
+                        {% elif current_user.role == 'dealer' %}
+                            <a href="{{ url_for('dealer.dashboard') }}" class="nav-link">Dashboard</a>
+                        {% endif %}
+                        
+                        <div class="h-8 w-px bg-gray-300"></div>
+                        
+                        <div class="flex items-center gap-4">
+                            <div class="text-sm">
+                                <p class="text-gray-500">Welcome,</p>
+                                <p class="font-semibold text-gray-800">{{ current_user.name }}</p>
+                            </div>
+                            <a href="{{ url_for('auth.logout') }}" class="btn-secondary py-2 px-4 shadow-none">
+                                Logout
+                            </a>
+                        </div>
+                    {% else %}
+                        <a href="{{ url_for('auth.login_page') }}" class="nav-link">Home</a>
+                        <a href="{{ url_for('auth.login_page') }}#register" class="btn-primary py-2 px-5">Join Network</a>
+                    {% endif %}
+                </div>
+                
+                <!-- Mobile menu button -->
+                <div class="flex items-center sm:hidden" x-data="{ open: false }">
+                    <button @click="open = !open" type="button" class="text-gray-500 hover:text-gray-700 focus:outline-none p-2">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path x-show="!open" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                            <path x-show="open" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" style="display: none;" />
+                        </svg>
+                    </button>
+                    
+                    <!-- Mobile Menu Dropdown -->
+                    <div x-show="open" @click.away="open = false" class="absolute top-20 left-0 right-0 glass shadow-xl border-t border-white/50 py-4 px-6 flex flex-col gap-4 origin-top transition-transform z-50">
+                        {% if current_user.is_authenticated %}
+                            <div class="pb-4 border-b border-gray-200">
+                                <p class="text-xs text-gray-500 uppercase tracking-wider font-bold">Signed in as</p>
+                                <p class="text-lg font-bold text-gray-800 mt-1">{{ current_user.name }}</p>
+                            </div>
+                            {% if current_user.role == 'farmer' %}
+                                <a href="{{ url_for('farmer.dashboard') }}" class="text-gray-700 hover:text-agri-600 font-medium py-2">Dashboard</a>
+                                <a href="{{ url_for('farmer.view_pools') }}" class="text-gray-700 hover:text-agri-600 font-medium py-2">Crop Pools</a>
+                                <a href="{{ url_for('farmer.edit_profile') }}" class="text-gray-700 hover:text-agri-600 font-medium py-2">Edit Profile</a>
+                            {% elif current_user.role == 'dealer' %}
+                                <a href="{{ url_for('dealer.dashboard') }}" class="text-gray-700 hover:text-agri-600 font-medium py-2">Dashboard</a>
+                            {% endif %}
+                            <a href="{{ url_for('auth.logout') }}" class="mt-4 btn-secondary w-full">Logout</a>
+                        {% else %}
+                            <a href="{{ url_for('auth.login_page') }}" class="text-gray-700 hover:text-agri-600 font-medium py-2">Login</a>
+                            <a href="{{ url_for('auth.login_page') }}#register" class="btn-primary w-full text-center mt-2">Join Network</a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Flash Messages -->
+    <div id="flash-container" class="fixed top-24 right-4 z-50 max-w-sm w-full outline-none flex flex-col gap-2">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    {% set is_err = (category == 'error' or category == 'danger') %}
+                    <div class="flash-message glass flex items-center justify-between p-4 rounded-xl shadow-lg border-l-4 {{ 'border-red-500 text-red-700' if is_err else 'border-agri-500 text-agri-800' }}">
+                        <div class="flex items-center gap-3">
+                            {% if is_err %}
+                            <svg class="w-5 h-5 text-red-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            {% else %}
+                            <svg class="w-5 h-5 text-agri-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            {% endif %}
+                            <span class="font-medium text-sm">{{ message }}</span>
+                        </div>
+                        <button onclick="this.parentElement.remove()" class="text-gray-400 hover:text-gray-600 transition-colors ml-4">
+                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                        </button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+
+    <!-- Main Content -->
+    <main class="min-h-[calc(100vh-5rem)] flex flex-col py-8 pb-20">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="mt-auto border-t border-gray-200 bg-white/50 backdrop-blur-md py-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center sm:flex sm:justify-between sm:text-left text-sm text-gray-500">
+            <p>&copy; 2026 Krishi-Connect. Empowering the hands that feed.</p>
+            <div class="mt-4 sm:mt-0 flex justify-center gap-6">
+                <a href="#" class="hover:text-agri-600 transition-colors">Privacy</a>
+                <a href="#" class="hover:text-agri-600 transition-colors">Terms</a>
+                <a href="#" class="hover:text-agri-600 transition-colors">Support</a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

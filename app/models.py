@@ -1,6 +1,27 @@
 from app import db
 from flask_login import UserMixin
-from datetime import date
+from datetime import date, datetime
+
+class CropPool(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    crop_type = db.Column(db.String(100), nullable=False)
+    state = db.Column(db.String(100))
+    city = db.Column(db.String(100))
+    target_quantity = db.Column(db.Float, nullable=False)
+    min_price = db.Column(db.Float, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    is_active = db.Column(db.Boolean, default=True)
+    
+    # Relationship to members
+    members = db.relationship('PoolMember', backref='pool', lazy=True, cascade="all, delete-orphan")
+
+class PoolMember(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    pool_id = db.Column(db.Integer, db.ForeignKey('crop_pool.id'), nullable=False)
+    farmer_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    contributed_qty = db.Column(db.Float, nullable=False)
+    joined_at = db.Column(db.DateTime, default=datetime.utcnow)
+
 
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -18,6 +39,7 @@ class FarmerProfile(db.Model):
     village = db.Column(db.String(100))
     city = db.Column(db.String(100))
     state = db.Column(db.String(100))
+    language_pref = db.Column(db.String(10), default='en-IN')  # e.g., hi-IN, kn-IN, ta-IN
     crop_type = db.Column(db.String(100))
     quantity = db.Column(db.Float)
     price_per_quintal = db.Column(db.Float)
