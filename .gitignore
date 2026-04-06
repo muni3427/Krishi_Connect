@@ -7,5 +7,3 @@ __pycache__/
 *.pyc
 *.pyo
 .env
-agriconnect.db
-*.sqlite3
