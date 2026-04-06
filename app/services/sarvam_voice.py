@@ -98,7 +98,7 @@ Do not use technical jargon.
             "Content-Type": "application/json",
         },
         json={
-            "model": "sarvam-m",
+            "model": "sarvam-30b",
             "messages": [{"role": "user", "content": prompt}],
             "max_tokens": 200,
         },
